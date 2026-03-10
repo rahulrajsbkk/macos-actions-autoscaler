@@ -4,6 +4,42 @@ A lightweight autoscaler that runs native macOS GitHub Actions runners on Apple 
 
 **No Kubernetes required.** Designed for Xcode, iOS/macOS builds, and anything that needs real Apple Silicon hardware.
 
+### Why?
+
+GitHub-hosted macOS runners are expensive ($0.08/min) and often run on older Intel hardware. If you already own Apple Silicon Macs — Mac Minis, Mac Studios, or Mac Pros — this autoscaler lets you turn them into a fully managed, auto-scaling CI fleet at a fraction of the cost.
+
+Since runners execute directly on the host, they automatically pick up whatever you've already installed — Xcode, Node.js, Ruby, CocoaPods, Flutter, Android SDK, Homebrew packages, and any other dependencies. No Docker images to maintain, no provisioning scripts to mirror your local toolchain. If it works on your Mac, it works in CI.
+
+Unlike generic self-hosted runner setups that register a single long-lived runner, this project uses **GitHub's official scale-set protocol** to dynamically spin up ephemeral runner processes on demand — the same mechanism that powers Actions Runner Controller (ARC) on Kubernetes, but running natively on macOS without containers or VMs.
+
+### Highlights
+
+- **Zero-to-runner in minutes** — One setup script installs dependencies, builds the binary, and configures a LaunchDaemon
+- **Ephemeral by default** — Every job gets a fresh runner process; no state leaks between builds
+- **Use your existing toolchain** — Runners inherit everything installed on the host: Xcode, Node.js, Ruby, CocoaPods, Flutter, Homebrew packages — no Docker images to build or sync
+- **Native Apple Silicon** — Full access to the GPU, Secure Enclave, Hypervisor.framework, and the iOS Simulator — no Rosetta, no virtualization overhead
+- **Scale-set integration** — Uses long-polling (not webhooks) so there's nothing to expose to the internet; works behind NAT and firewalls
+- **Runs as a LaunchDaemon** — Starts at boot before any user logs in, survives restarts, auto-recovers on crash
+- **Org or repo scoped** — Register runners for your entire GitHub organization or lock them to a single repository
+- **Minimal footprint** — Single Go binary (~15 MB), no Docker, no Kubernetes, no external databases
+
+## Use Cases
+
+This autoscaler is ideal for any CI/CD workload that requires macOS or Apple Silicon hardware:
+
+- **iOS / macOS / visionOS app builds** — Xcode builds, archiving, and distribution via `xcodebuild` or Fastlane
+- **UI testing** — Run XCUITest, Detox, Maestro, or Appium test suites on the iOS Simulator (backed by real Apple Silicon, not emulation)
+- **React Native iOS builds** — Full `npx react-native build-ios` or Expo EAS-compatible local builds with CocoaPods and Xcode toolchains
+- **Flutter iOS builds** — `flutter build ios` with native compilation on ARM64; no Rosetta overhead
+- **Swift Packages & libraries** — Build and test Swift packages that depend on Apple SDKs or XCTest
+- **macOS app signing & notarization** — Code-sign, notarize, and staple `.app` / `.pkg` artifacts with `codesign` and `notarytool`
+- **Simulator snapshot testing** — Generate and diff UI snapshots (e.g., with `swift-snapshot-testing` or Percy)
+- **Performance & benchmarking** — Consistent hardware means reproducible XCTest performance metrics across runs
+- **Cross-platform SDKs** — Build and test Kotlin Multiplatform, .NET MAUI, or Capacitor projects that need an Xcode toolchain for the iOS target
+- **Homebrew / macOS CLI tools** — Build, test, and package command-line tools targeting macOS ARM64
+
+Because every runner is **ephemeral** (one job, then exit), each build gets a clean environment — no leftover DerivedData, no stale simulator state, no credential leakage between jobs.
+
 ## How It Works
 
 ```
@@ -190,15 +226,86 @@ sudo launchctl bootstrap system /Library/LaunchDaemons/com.github.runner-autosca
 
 ### 5. Target in Workflows
 
+Use `runs-on: mac-mini-runners` (or whatever you passed to `--name`) in your workflow files.
+
+**Xcode build & test:**
+
 ```yaml
-# .github/workflows/build.yml
 jobs:
   build:
-    runs-on: mac-mini-runners  # must match --name
+    runs-on: mac-mini-runners
     steps:
       - uses: actions/checkout@v4
-      - name: Build
-        run: xcodebuild -scheme MyApp
+      - name: Build & test
+        run: |
+          xcodebuild -scheme MyApp -destination 'platform=iOS Simulator,name=iPhone 16' \
+            clean build test
+```
+
+**XCUITest UI tests:**
+
+```yaml
+jobs:
+  ui-tests:
+    runs-on: mac-mini-runners
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run UI tests
+        run: |
+          xcodebuild test \
+            -scheme MyAppUITests \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -resultBundlePath TestResults.xcresult
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults.xcresult
+```
+
+**React Native iOS build:**
+
+```yaml
+jobs:
+  react-native-ios:
+    runs-on: mac-mini-runners
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: cd ios && pod install
+      - run: npx react-native build-ios --scheme MyApp --mode Release
+```
+
+**Flutter iOS build:**
+
+```yaml
+jobs:
+  flutter-ios:
+    runs-on: mac-mini-runners
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter build ios --release --no-codesign
+```
+
+**Fastlane distribution:**
+
+```yaml
+jobs:
+  distribute:
+    runs-on: mac-mini-runners
+    steps:
+      - uses: actions/checkout@v4
+      - run: bundle install
+      - run: bundle exec fastlane beta
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.ASC_API_KEY }}
 ```
 
 ## CLI Flags
