@@ -74,14 +74,28 @@ When registering at the **org level**, you can further restrict which repos can 
 ```bash
 git clone <this-repo> ~/Works/actions-scaling
 cd ~/Works/actions-scaling
+cp .env.example .env
+nano .env          # fill in your GitHub App credentials
 ./setup.sh
 ```
 
-This will:
-- Install Go (via Homebrew) if not present
-- Download the GitHub Actions runner binary (v2.332.0, osx-arm64)
-- Build the autoscaler binary
-- Generate a launchd plist template
+The setup script reads configuration from `.env` (or environment variables) and:
+- Installs Go (via Homebrew) if not present
+- Downloads the GitHub Actions runner binary (v2.332.0, osx-arm64)
+- Builds the autoscaler binary
+- Generates a fully configured LaunchDaemon plist from your `.env` values
+
+You can also pass variables inline without a `.env` file:
+
+```bash
+GITHUB_URL=https://github.com/acme \
+GITHUB_APP_CLIENT_ID=Iv1.abc123 \
+GITHUB_APP_INSTALLATION_ID=12345678 \
+GITHUB_APP_PRIVATE_KEY_PATH=~/.secrets/github-app.pem \
+./setup.sh
+```
+
+See `.env.example` for all configurable variables.
 
 ### 3. Test Manually
 
@@ -116,19 +130,41 @@ You should see:
 Starting listener scaleSet=mac-mini-runners scaleSetID=... maxRunners=4
 ```
 
-### 4. Run as a Service (launchd)
+### 4. Run as a Daemon (starts on boot, survives restarts)
 
-Edit the generated plist at `~/Library/LaunchAgents/com.github.runner-autoscaler.plist` (or use the template in this repo) and fill in your credentials. Then:
+The setup script installs a **LaunchDaemon** at `/Library/LaunchDaemons/com.github.runner-autoscaler.plist`. Unlike a LaunchAgent, this starts at boot — before any user logs in — and automatically restarts if the process exits.
+
+If you already ran setup with a populated `.env`, the plist is ready to go. Otherwise edit it:
 
 ```bash
-# Load and start
-launchctl load ~/Library/LaunchAgents/com.github.runner-autoscaler.plist
+sudo nano /Library/LaunchDaemons/com.github.runner-autoscaler.plist
+```
+
+Load the daemon:
+
+```bash
+# Load and start (runs immediately and on every boot)
+sudo launchctl bootstrap system /Library/LaunchDaemons/com.github.runner-autoscaler.plist
 
 # Check status
-launchctl list | grep runner-autoscaler
+sudo launchctl print system/com.github.runner-autoscaler
 
 # View logs
-tail -f ~/Library/Logs/runner-autoscaler.log
+tail -f /var/log/runner-autoscaler.log
+```
+
+Service management commands:
+
+```bash
+# Force-start the service now
+sudo launchctl kickstart system/com.github.runner-autoscaler
+
+# Stop and unload the service
+sudo launchctl bootout system/com.github.runner-autoscaler
+
+# Reload after editing the plist
+sudo launchctl bootout system/com.github.runner-autoscaler 2>/dev/null
+sudo launchctl bootstrap system /Library/LaunchDaemons/com.github.runner-autoscaler.plist
 ```
 
 ### 5. Target in Workflows

@@ -1,32 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  LaunchDaemon template for the GitHub Actions runner autoscaler.
+  All ${VAR} placeholders are substituted by setup.sh using values
+  from .env (or environment variables). See .env.example for the
+  full list of configurable variables.
+-->
 <plist version="1.0">
 <dict>
     <key>Label</key>
     <string>com.github.runner-autoscaler</string>
 
-    <!-- Update paths and credentials below before loading.
-         For org-wide:   https://github.com/YOUR_ORG
-         For single repo: https://github.com/YOUR_ORG/YOUR_REPO -->
     <key>ProgramArguments</key>
     <array>
-        <string>/Users/rahul/Works/actions-scaling/actions-scaling</string>
+        <string>${AUTOSCALER_BIN}</string>
         <string>--url</string>
-        <string>https://github.com/YOUR_ORG</string>
+        <string>${GITHUB_URL}</string>
         <string>--name</string>
-        <string>mac-mini-runners</string>
+        <string>${SCALE_SET_NAME}</string>
         <string>--max-runners</string>
-        <string>4</string>
+        <string>${MAX_RUNNERS}</string>
         <string>--runner-dir</string>
-        <string>/Users/rahul/actions-runner</string>
+        <string>${RUNNER_DIR}</string>
         <string>--app-client-id</string>
-        <string>YOUR_APP_CLIENT_ID</string>
+        <string>${GITHUB_APP_CLIENT_ID}</string>
         <string>--app-installation-id</string>
-        <string>YOUR_INSTALLATION_ID</string>
+        <string>${GITHUB_APP_INSTALLATION_ID}</string>
         <string>--app-private-key</string>
-        <string>/Users/rahul/.secrets/github-app.pem</string>
+        <string>${GITHUB_APP_PRIVATE_KEY_PATH}</string>
     </array>
+
+    <key>UserName</key>
+    <string>${RUNNER_USER}</string>
+
+    <key>GroupName</key>
+    <string>${RUNNER_GROUP}</string>
+
+    <key>WorkingDirectory</key>
+    <string>${RUNNER_HOME}</string>
 
     <key>RunAtLoad</key>
     <true/>
@@ -34,16 +46,21 @@
     <key>KeepAlive</key>
     <true/>
 
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
     <key>StandardOutPath</key>
-    <string>/Users/rahul/Library/Logs/runner-autoscaler.log</string>
+    <string>/var/log/runner-autoscaler.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/rahul/Library/Logs/runner-autoscaler-error.log</string>
+    <string>/var/log/runner-autoscaler-error.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
         <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>HOME</key>
+        <string>${RUNNER_HOME}</string>
     </dict>
 </dict>
 </plist>
