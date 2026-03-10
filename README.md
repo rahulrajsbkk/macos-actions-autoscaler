@@ -55,6 +55,24 @@ When registering at the **org level**, you can further restrict which repos can 
 
 ### 1. Create a GitHub App
 
+The easiest way is the automated script (requires `gh` CLI):
+
+```bash
+brew install gh          # if not already installed
+gh auth login            # authenticate with GitHub
+./create-github-app.sh   # creates app, key, installs, updates .env
+```
+
+This will:
+- Create a GitHub App with the correct permissions via the manifest flow
+- Generate and save the private key to `~/.secrets/github-app.pem`
+- Open your browser to install the app on your org
+- Auto-detect the Installation ID
+- Write `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_INSTALLATION_ID`, and `GITHUB_APP_PRIVATE_KEY_PATH` into `.env`
+
+<details>
+<summary>Manual alternative (without gh CLI)</summary>
+
 1. Go to **GitHub → Settings → Developer Settings → GitHub Apps → New GitHub App**
 2. Fill in:
    - **Name:** `mac-runner-autoscaler` (or any name)
@@ -68,6 +86,9 @@ When registering at the **org level**, you can further restrict which repos can 
 6. Scroll down → **Generate a private key** → save the `.pem` file
 7. Click **Install App** → select your organization
 8. Note the **Installation ID** from the URL: `https://github.com/settings/installations/INSTALLATION_ID`
+9. Fill in the values in `.env`
+
+</details>
 
 ### 2. Run Setup
 
