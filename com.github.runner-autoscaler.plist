@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.github.runner-autoscaler</string>
+
+    <!-- Update paths and credentials below before loading -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/rahul/Works/actions-scaling/actions-scaling</string>
+        <string>--url</string>
+        <string>https://github.com/YOUR_ORG</string>
+        <string>--name</string>
+        <string>mac-mini-runners</string>
+        <string>--max-runners</string>
+        <string>4</string>
+        <string>--runner-dir</string>
+        <string>/Users/rahul/actions-runner</string>
+        <string>--app-client-id</string>
+        <string>YOUR_APP_CLIENT_ID</string>
+        <string>--app-installation-id</string>
+        <string>YOUR_INSTALLATION_ID</string>
+        <string>--app-private-key</string>
+        <string>/Users/rahul/.secrets/github-app.pem</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/rahul/Library/Logs/runner-autoscaler.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/rahul/Library/Logs/runner-autoscaler-error.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+</dict>
+</plist>
