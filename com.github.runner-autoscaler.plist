@@ -6,7 +6,9 @@
     <key>Label</key>
     <string>com.github.runner-autoscaler</string>
 
-    <!-- Update paths and credentials below before loading -->
+    <!-- Update paths and credentials below before loading.
+         For org-wide:   https://github.com/YOUR_ORG
+         For single repo: https://github.com/YOUR_ORG/YOUR_REPO -->
     <key>ProgramArguments</key>
     <array>
         <string>/Users/rahul/Works/actions-scaling/actions-scaling</string>

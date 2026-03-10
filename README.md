@@ -24,11 +24,32 @@ Process exits, autoscaler tracks the cleanup
 
 Each runner is **ephemeral**: it runs exactly one job, then exits. This ensures a clean environment for every build.
 
+## Scope: Organization vs Single Repo
+
+The `--url` flag controls where the scale set is registered:
+
+| Scope | `--url` value | Runners available to |
+|-------|--------------|----------------------|
+| **Organization** | `https://github.com/YOUR_ORG` | All repos in the org (subject to runner group policies) |
+| **Single repo** | `https://github.com/YOUR_ORG/YOUR_REPO` | Only that specific repository |
+
+**Examples:**
+
+```bash
+# Organization-wide — all repos can use runs-on: mac-mini-runners
+./actions-scaling --url https://github.com/acme-corp --name mac-mini-runners ...
+
+# Single repo only — only acme-corp/ios-app can use these runners
+./actions-scaling --url https://github.com/acme-corp/ios-app --name mac-mini-runners ...
+```
+
+When registering at the **org level**, you can further restrict which repos can use the runners via [runner groups](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/managing-access-to-self-hosted-runners-using-groups) in your GitHub org settings.
+
 ## Prerequisites
 
 - macOS on Apple Silicon (M2 or newer)
 - [Homebrew](https://brew.sh)
-- A GitHub organization
+- A GitHub organization or repository
 
 ## Quick Start
 
@@ -64,9 +85,24 @@ This will:
 
 ### 3. Test Manually
 
+**Organization-wide:**
+
 ```bash
 ./actions-scaling \
   --url https://github.com/YOUR_ORG \
+  --name mac-mini-runners \
+  --max-runners 4 \
+  --runner-dir ~/actions-runner \
+  --app-client-id Iv1.YOUR_CLIENT_ID \
+  --app-installation-id 12345678 \
+  --app-private-key ~/.secrets/github-app.pem
+```
+
+**Single repo only:**
+
+```bash
+./actions-scaling \
+  --url https://github.com/YOUR_ORG/YOUR_REPO \
   --name mac-mini-runners \
   --max-runners 4 \
   --runner-dir ~/actions-runner \
@@ -112,7 +148,7 @@ jobs:
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--url` | (required) | GitHub org/repo URL for scale set registration |
+| `--url` | (required) | GitHub org URL (`https://github.com/org`) or repo URL (`https://github.com/org/repo`) |
 | `--name` | (required) | Scale set name (becomes your `runs-on:` label) |
 | `--max-runners` | `4` | Maximum concurrent runner processes |
 | `--min-runners` | `0` | Minimum idle runners to keep warm |

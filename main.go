@@ -16,7 +16,7 @@ import (
 
 func init() {
 	flags := cmd.Flags()
-	flags.StringVar(&cfg.RegistrationURL, "url", "", "REQUIRED: URL where to register your scale set (e.g. https://github.com/org)")
+	flags.StringVar(&cfg.RegistrationURL, "url", "", "REQUIRED: GitHub org or repo URL (e.g. https://github.com/org or https://github.com/org/repo)")
 	flags.StringVar(&cfg.ScaleSetName, "name", "", "REQUIRED: Name of your scale set (also used as runs-on label)")
 	flags.IntVar(&cfg.MaxRunners, "max-runners", 4, "Maximum number of concurrent runners")
 	flags.IntVar(&cfg.MinRunners, "min-runners", 0, "Minimum number of idle runners to keep warm")
